@@ -145,6 +145,98 @@ app.get('/api/payments', async (req, res) => {
   }
 });
 
+// Analytics endpoints
+app.get('/api/analytics/trips', async (req, res) => {
+  try {
+    console.log('📈 Fetching trip analytics from PostgreSQL...');
+    
+    // Query to get trips grouped by day for the current week
+    const result = await pool.query(`
+      SELECT 
+        TO_CHAR(created_at, 'Dy') as day,
+        COUNT(*) as trips
+      FROM orders 
+      WHERE created_at >= date_trunc('week', CURRENT_DATE)
+      GROUP BY TO_CHAR(created_at, 'Dy'), DATE_PART('dow', created_at)
+      ORDER BY DATE_PART('dow', created_at)
+    `);
+    
+    console.log('✅ Trip analytics fetched:', result.rows.length, 'days');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('❌ Error fetching trip analytics:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+app.get('/api/analytics/revenue', async (req, res) => {
+  try {
+    console.log('💰 Fetching revenue analytics from PostgreSQL...');
+    
+    // Query to get revenue grouped by day for the current week
+    const result = await pool.query(`
+      SELECT 
+        TO_CHAR(p.created_at, 'Dy') as day,
+        COALESCE(SUM(p.amount), 0) as revenue
+      FROM payments p
+      WHERE p.created_at >= date_trunc('week', CURRENT_DATE)
+        AND p.status = 'completed'
+      GROUP BY TO_CHAR(p.created_at, 'Dy'), DATE_PART('dow', p.created_at)
+      ORDER BY DATE_PART('dow', p.created_at)
+    `);
+    
+    console.log('✅ Revenue analytics fetched:', result.rows.length, 'days');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('❌ Error fetching revenue analytics:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone } = req.body;
+    
+    console.log(`👤 Updating user profile for ID: ${id}`);
+    
+    const result = await pool.query(
+      'UPDATE users SET name = $1, email = $2, phone = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
+      [name, email, phone, id]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log(`❌ User not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+    
+    console.log('✅ User profile updated successfully');
+    
+    // Return the updated user with success message
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('❌ Error updating user:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
@@ -154,4 +246,6 @@ app.listen(PORT, () => {
   console.log(`📍 Recent trips: http://localhost:${PORT}/api/trips/recent`);
   console.log(`📍 Users: http://localhost:${PORT}/api/users`);
   console.log(`📍 Orders: http://localhost:${PORT}/api/orders`);
+  console.log(`📍 Trip Analytics: http://localhost:${PORT}/api/analytics/trips`);
+  console.log(`📍 Revenue Analytics: http://localhost:${PORT}/api/analytics/revenue`);
 });
