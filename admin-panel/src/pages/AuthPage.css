@@ -1,0 +1,49 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-content {
+  display: flex;
+  max-width: 900px;
+  width: 100%;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.auth-info {
+  flex: 1;
+  background: linear-gradient(135deg, #4a90e2 0%, #3a80d2 100%);
+  color: white;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.auth-info h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.auth-info p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .auth-content {
+    flex-direction: column;
+    margin: 20px;
+  }
+  
+  .auth-info {
+    padding: 2rem;
+    text-align: center;
+  }
+}

@@ -1,7 +1,21 @@
+import AuthPage from './pages/AuthPage';
+import { useAuth } from './contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  const { currentUser, logout } = useAuth(); // Add logout to the destructuring
+  
+  // If user is not authenticated, show auth pages
+  if (!currentUser) {
+    return (
+      <div className="app">
+        <AuthPage />
+      </div>
+    );
+  }
+
+  // Dashboard state and functions - ONLY when user is authenticated
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({
     total_trips: 0,
@@ -18,13 +32,15 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+
+  // Use the actual logged-in user data instead of hardcoded data
   const [userProfile, setUserProfile] = useState({
-    id: 1,
-    name: 'Admin User',
-    email: 'admin@loadgo.com',
-    role: 'admin',
-    phone: '+27 123 456 7890',
-    joined_date: '2024-01-15'
+    id: currentUser?.id || '',
+    name: currentUser?.name || '',
+    email: currentUser?.email || '',
+    role: currentUser?.role || '',
+    phone: currentUser?.phone || '',
+    joined_date: currentUser?.created_at || ''
   });
 
   // Modal states for view/edit functionality
@@ -41,9 +57,22 @@ function App() {
   const [revenueData, setRevenueData] = useState([]);
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchAnalyticsData();
-  }, []);
+    // Only fetch dashboard data if user is authenticated
+    if (currentUser) {
+      fetchDashboardData();
+      fetchAnalyticsData();
+      
+      // Update user profile with actual user data
+      setUserProfile({
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        phone: currentUser.phone || '',
+        joined_date: currentUser.created_at
+      });
+    }
+  }, [currentUser]);
 
   // Toast notification system
   const showToast = (message, type = 'success') => {
@@ -1169,6 +1198,16 @@ function App() {
         <div className="header-actions">
           <button onClick={refreshData} className="refresh-btn">
             🔄 Refresh
+          </button>
+          
+          <button 
+            onClick={() => {
+              logout();
+              showToast('Logged out successfully', 'success');
+            }} 
+            className="logout-btn"
+          >
+            🚪 Logout
           </button>
           
           <div className="profile-menu">
