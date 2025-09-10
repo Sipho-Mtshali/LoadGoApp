@@ -217,60 +217,96 @@ function App() {
   };
 
   const handleDelete = async (id, dataType) => {
-    if (!window.confirm(`Are you sure you want to delete this ${dataType}?`)) {
-      return;
-    }
+  if (!window.confirm(`Are you sure you want to delete this ${dataType}?`)) {
+    return;
+  }
 
-    try {
-      const endpoint = dataType === 'user' ? 'users' : dataType === 'trip' ? 'orders' : `${dataType}s`;
-      const response = await fetch(`http://localhost:5000/api/${endpoint}/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        showToast(`${dataType.charAt(0).toUpperCase() + dataType.slice(1)} deleted successfully!`, 'success');
-        fetchDashboardData(); // Refresh data
-      } else {
-        throw new Error(`Failed to delete ${dataType}`);
-      }
-    } catch (error) {
-      console.error(`Error deleting ${dataType}:`, error);
-      showToast(`Error deleting ${dataType}: ${error.message}`, 'error');
+  try {
+    let endpoint;
+    
+    // Determine the correct endpoint based on data type
+    switch(dataType) {
+      case 'user':
+        endpoint = 'users';
+        break;
+      case 'driver':
+        endpoint = 'users'; // Drivers are also stored in users table
+        break;
+      case 'trip':
+        endpoint = 'orders';
+        break;
+      case 'payment':
+        endpoint = 'payments';
+        break;
+      default:
+        throw new Error(`Unknown data type: ${dataType}`);
     }
-  };
+    
+    const response = await fetch(`http://localhost:5000/api/${endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (response.ok) {
+      showToast(`${dataType.charAt(0).toUpperCase() + dataType.slice(1)} deleted successfully!`, 'success');
+      fetchDashboardData(); // Refresh data
+    } else {
+      throw new Error(`Failed to delete ${dataType}`);
+    }
+  } catch (error) {
+    console.error(`Error deleting ${dataType}:`, error);
+    showToast(`Error deleting ${dataType}: ${error.message}`, 'error');
+  }
+};
 
   const handleModalSave = async () => {
-    try {
-      const endpoint = modalDataType === 'user' ? 'users' : 
-                     modalDataType === 'trip' ? 'orders' : 
-                     `${modalDataType}s`;
-      
-      const response = await fetch(`http://localhost:5000/api/${endpoint}/${modalData.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(modalData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          showToast(`${modalDataType.charAt(0).toUpperCase() + modalDataType.slice(1)} updated successfully!`, 'success');
-          fetchDashboardData(); // Refresh data
-          closeModal();
-        } else {
-          throw new Error(result.message || `Failed to update ${modalDataType}`);
-        }
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to update ${modalDataType}`);
-      }
-    } catch (error) {
-      console.error(`Error updating ${modalDataType}:`, error);
-      showToast(`Error updating ${modalDataType}: ${error.message}`, 'error');
+  try {
+    let endpoint;
+    let idField = 'id';
+    
+    // Determine the correct endpoint and ID field based on data type
+    switch(modalDataType) {
+      case 'user':
+        endpoint = 'users';
+        break;
+      case 'driver':
+        endpoint = 'users'; // Drivers are also stored in users table
+        break;
+      case 'trip':
+        endpoint = 'orders';
+        break;
+      case 'payment':
+        endpoint = 'payments';
+        break;
+      default:
+        throw new Error(`Unknown data type: ${modalDataType}`);
     }
-  };
+    
+    const response = await fetch(`http://localhost:5000/api/${endpoint}/${modalData[idField]}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(modalData),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success) {
+        showToast(`${modalDataType.charAt(0).toUpperCase() + modalDataType.slice(1)} updated successfully!`, 'success');
+        fetchDashboardData(); // Refresh data
+        closeModal();
+      } else {
+        throw new Error(result.message || `Failed to update ${modalDataType}`);
+      }
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to update ${modalDataType}`);
+    }
+  } catch (error) {
+    console.error(`Error updating ${modalDataType}:`, error);
+    showToast(`Error updating ${modalDataType}: ${error.message}`, 'error');
+  }
+};
 
   const refreshData = () => {
     fetchDashboardData();
@@ -441,78 +477,83 @@ function App() {
   };
 
   const renderDriverModal = () => {
-    const isEditing = modalType === 'edit';
-    
-    return (
-      <div className="modal-fields">
-        <div className="field-group">
-          <label>Name:</label>
-          {isEditing ? (
-            <input
-              type="text"
-              value={modalData.name || ''}
-              onChange={(e) => setModalData({...modalData, name: e.target.value})}
-            />
-          ) : (
-            <span>{modalData.name}</span>
-          )}
-        </div>
-        
-        <div className="field-group">
-          <label>Email:</label>
-          {isEditing ? (
-            <input
-              type="email"
-              value={modalData.email || ''}
-              onChange={(e) => setModalData({...modalData, email: e.target.value})}
-            />
-          ) : (
-            <span>{modalData.email}</span>
-          )}
-        </div>
-        
-        <div className="field-group">
-          <label>Phone:</label>
-          {isEditing ? (
-            <input
-              type="tel"
-              value={modalData.phone || ''}
-              onChange={(e) => setModalData({...modalData, phone: e.target.value})}
-            />
-          ) : (
-            <span>{modalData.phone || 'N/A'}</span>
-          )}
-        </div>
-        
-        <div className="field-group">
-          <label>Vehicle Type:</label>
-          {isEditing ? (
-            <select
-              value={modalData.vehicle_type || ''}
-              onChange={(e) => setModalData({...modalData, vehicle_type: e.target.value})}
-            >
-              <option value="">Select Vehicle Type</option>
-              <option value="bakkie">Bakkie</option>
-              <option value="truck">Truck</option>
-              <option value="van">Van</option>
-            </select>
-          ) : (
-            <span>{modalData.vehicle_type || 'N/A'}</span>
-          )}
-        </div>
-        
-        <div className="field-group">
-          <label>Status:</label>
-          <span className="badge status-active">Active</span>
-        </div>
-        
-        <div className="field-group">
-          <label>Joined Date:</label>
-          <span>{formatDate(modalData.created_at)}</span>
-        </div>
+  const isEditing = modalType === 'edit';
+  
+  return (
+    <div className="modal-fields">
+      <div className="field-group">
+        <label>Name:</label>
+        {isEditing ? (
+          <input
+            type="text"
+            value={modalData.name || ''}
+            onChange={(e) => setModalData({...modalData, name: e.target.value})}
+          />
+        ) : (
+          <span>{modalData.name}</span>
+        )}
       </div>
-    );
-  };
+      
+      <div className="field-group">
+        <label>Email:</label>
+        {isEditing ? (
+          <input
+            type="email"
+            value={modalData.email || ''}
+            onChange={(e) => setModalData({...modalData, email: e.target.value})}
+          />
+        ) : (
+          <span>{modalData.email}</span>
+        )}
+      </div>
+      
+      <div className="field-group">
+        <label>Phone:</label>
+        {isEditing ? (
+          <input
+            type="tel"
+            value={modalData.phone || ''}
+            onChange={(e) => setModalData({...modalData, phone: e.target.value})}
+          />
+        ) : (
+          <span>{modalData.phone || 'N/A'}</span>
+        )}
+      </div>
+      
+      <div className="field-group">
+        <label>Role:</label>
+        <span className={`badge role-${modalData.role}`}>{modalData.role}</span>
+      </div>
+      
+      <div className="field-group">
+        <label>Vehicle Type:</label>
+        {isEditing ? (
+          <select
+            value={modalData.vehicle_type || ''}
+            onChange={(e) => setModalData({...modalData, vehicle_type: e.target.value})}
+          >
+            <option value="">Select Vehicle Type</option>
+            <option value="bakkie">Bakkie</option>
+            <option value="truck">Truck</option>
+            <option value="van">Van</option>
+          </select>
+        ) : (
+          <span>{modalData.vehicle_type || 'N/A'}</span>
+        )}
+      </div>
+      
+      <div className="field-group">
+        <label>Status:</label>
+        <span className="badge status-active">Active</span>
+      </div>
+      
+      <div className="field-group">
+        <label>Joined Date:</label>
+        <span>{formatDate(modalData.created_at)}</span>
+      </div>
+    </div>
+  );
+};
 
   const renderTripModal = () => {
     const isEditing = modalType === 'edit';

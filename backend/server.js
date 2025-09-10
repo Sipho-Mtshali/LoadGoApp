@@ -148,7 +148,7 @@ app.get('/api/auth/verify', async (req, res) => {
   }
 });
 
-// ==================== YOUR EXISTING ROUTES (KEEP THESE) ====================
+// ==================== DASHBOARD & ANALYTICS ROUTES ====================
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -213,59 +213,6 @@ app.get('/api/trips/recent', async (req, res) => {
   }
 });
 
-// Health check with real database connection test
-app.get('/api/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ 
-      status: 'OK', 
-      database: 'postgres_connected',
-      timestamp: new Date().toISOString(),
-      message: 'PostgreSQL database is connected and responsive'
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'ERROR', 
-      database: 'postgres_disconnected',
-      timestamp: new Date().toISOString(),
-      error: error.message 
-    });
-  }
-});
-
-// Get all users (for testing)
-app.get('/api/users', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM users ORDER BY id');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get all orders (for testing)
-app.get('/api/orders', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get all payments (for testing)
-app.get('/api/payments', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM payments ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Analytics endpoints
 app.get('/api/analytics/trips', async (req, res) => {
   try {
@@ -320,16 +267,81 @@ app.get('/api/analytics/revenue', async (req, res) => {
   }
 });
 
+// Health check with real database connection test
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ 
+      status: 'OK', 
+      database: 'postgres_connected',
+      timestamp: new Date().toISOString(),
+      message: 'PostgreSQL database is connected and responsive'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      database: 'postgres_disconnected',
+      timestamp: new Date().toISOString(),
+      error: error.message 
+    });
+  }
+});
+
+// ==================== CRUD ROUTES ====================
+
+// Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users ORDER BY id');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all orders
+app.get('/api/orders', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all payments
+app.get('/api/payments', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM payments ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== UPDATE & DELETE ROUTES ====================
+
+// Valid status values for orders
+const VALID_ORDER_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled'];
+// Valid payment methods
+const VALID_PAYMENT_METHODS = ['cash', 'card', 'wallet', 'bank_transfer'];
+// Valid payment statuses
+const VALID_PAYMENT_STATUSES = ['pending', 'completed', 'failed', 'refunded'];
+
+// Update user
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone } = req.body;
+    const { name, email, phone, role, vehicle_type } = req.body;
     
-    console.log(`👤 Updating user profile for ID: ${id}`);
+    console.log(`👤 Updating user with ID: ${id}`);
     
     const result = await pool.query(
-      'UPDATE users SET name = $1, email = $2, phone = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
-      [name, email, phone, id]
+      'UPDATE users SET name = $1, email = $2, phone = $3, role = $4, vehicle_type = $5, updated_at = NOW() WHERE id = $6 RETURNING *',
+      [name, email, phone, role, vehicle_type, id]
     );
     
     if (result.rows.length === 0) {
@@ -340,16 +352,356 @@ app.put('/api/users/:id', async (req, res) => {
       });
     }
     
-    console.log('✅ User profile updated successfully');
+    console.log('✅ User updated successfully');
     
-    // Return the updated user with success message
     res.json({
       success: true,
-      message: 'Profile updated successfully',
+      message: 'User updated successfully',
       user: result.rows[0]
     });
   } catch (error) {
     console.error('❌ Error updating user:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    const { id } = req.params;
+    
+    console.log(`🗑️ Deleting user with ID: ${id}`);
+    
+    // First check if user exists
+    const userCheck = await client.query(
+      'SELECT id FROM users WHERE id = $1',
+      [id]
+    );
+    
+    if (userCheck.rows.length === 0) {
+      console.log(`❌ User not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+    
+    // Check if user has associated orders
+    const ordersCheck = await client.query(
+      'SELECT id FROM orders WHERE driver_id = $1 OR customer_id = $1',
+      [id]
+    );
+    
+    if (ordersCheck.rows.length > 0) {
+      console.log(`❌ Cannot delete user with ID: ${id} - User has associated orders`);
+      return res.status(400).json({ 
+        success: false,
+        error: 'Cannot delete user with associated orders. Please reassign or delete orders first.' 
+      });
+    }
+    
+    // Check if user has associated payments
+    const paymentsCheck = await client.query(
+      'SELECT id FROM payments WHERE user_id = $1',
+      [id]
+    );
+    
+    if (paymentsCheck.rows.length > 0) {
+      console.log(`❌ Cannot delete user with ID: ${id} - User has associated payments`);
+      return res.status(400).json({ 
+        success: false,
+        error: 'Cannot delete user with associated payments. Please reassign or delete payments first.' 
+      });
+    }
+    
+    // If no associated records, delete the user
+    const result = await client.query(
+      'DELETE FROM users WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    await client.query('COMMIT');
+    
+    console.log('✅ User deleted successfully');
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error deleting user:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// Update order (trip)
+app.put('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pickup_location, dropoff_location, status, price } = req.body;
+    
+    console.log(`📦 Updating order with ID: ${id}`);
+    
+    // Validate status
+    if (status && !VALID_ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Must be one of: ${VALID_ORDER_STATUSES.join(', ')}`
+      });
+    }
+    
+    const result = await pool.query(
+      'UPDATE orders SET pickup_location = $1, dropoff_location = $2, status = $3, price = $4, updated_at = NOW() WHERE id = $5 RETURNING *',
+      [pickup_location, dropoff_location, status, price, id]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log(`❌ Order not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Order not found' 
+      });
+    }
+    
+    console.log('✅ Order updated successfully');
+    
+    res.json({
+      success: true,
+      message: 'Order updated successfully',
+      order: result.rows[0]
+    });
+  } catch (error) {
+    console.error('❌ Error updating order:', error);
+    
+    // Check if it's a constraint violation
+    if (error.message.includes('orders_status_check')) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Must be one of: ${VALID_ORDER_STATUSES.join(', ')}`
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+// Delete order (trip)
+app.delete('/api/orders/:id', async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    const { id } = req.params;
+    
+    console.log(`🗑️ Deleting order with ID: ${id}`);
+    
+    // First check if order exists
+    const orderCheck = await client.query(
+      'SELECT id FROM orders WHERE id = $1',
+      [id]
+    );
+    
+    if (orderCheck.rows.length === 0) {
+      console.log(`❌ Order not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Order not found' 
+      });
+    }
+    
+    // Check if order has associated payments
+    const paymentsCheck = await client.query(
+      'SELECT id FROM payments WHERE order_id = $1',
+      [id]
+    );
+    
+    if (paymentsCheck.rows.length > 0) {
+      console.log(`❌ Cannot delete order with ID: ${id} - Order has associated payments`);
+      return res.status(400).json({ 
+        success: false,
+        error: 'Cannot delete order with associated payments. Please delete payments first.' 
+      });
+    }
+    
+    // If no associated payments, delete the order
+    const result = await client.query(
+      'DELETE FROM orders WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    await client.query('COMMIT');
+    
+    console.log('✅ Order deleted successfully');
+    
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error deleting order:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// Update payment
+app.put('/api/payments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, method } = req.body;
+    
+    console.log(`💰 Updating payment with ID: ${id}`);
+    
+    // Validate status and method
+    if (status && !VALID_PAYMENT_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Must be one of: ${VALID_PAYMENT_STATUSES.join(', ')}`
+      });
+    }
+    
+    if (method && !VALID_PAYMENT_METHODS.includes(method)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid payment method. Must be one of: ${VALID_PAYMENT_METHODS.join(', ')}`
+      });
+    }
+    
+    const result = await pool.query(
+      'UPDATE payments SET status = $1, method = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+      [status, method, id]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log(`❌ Payment not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Payment not found' 
+      });
+    }
+    
+    console.log('✅ Payment updated successfully');
+    
+    res.json({
+      success: true,
+      message: 'Payment updated successfully',
+      payment: result.rows[0]
+    });
+  } catch (error) {
+    console.error('❌ Error updating payment:', error);
+    
+    // Check if it's a constraint violation
+    if (error.message.includes('payments_method_check')) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid payment method. Must be one of: ${VALID_PAYMENT_METHODS.join(', ')}`
+      });
+    }
+    
+    if (error.message.includes('payments_status_check')) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Must be one of: ${VALID_PAYMENT_STATUSES.join(', ')}`
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+// Delete payment
+app.delete('/api/payments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`🗑️ Deleting payment with ID: ${id}`);
+    
+    const result = await pool.query(
+      'DELETE FROM payments WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log(`❌ Payment not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Payment not found' 
+      });
+    }
+    
+    console.log('✅ Payment deleted successfully');
+    
+    res.json({
+      success: true,
+      message: 'Payment deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error deleting payment:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+// Approve payment
+app.put('/api/payments/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`✅ Approving payment with ID: ${id}`);
+    
+    const result = await pool.query(
+      'UPDATE payments SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      ['completed', id]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log(`❌ Payment not found with ID: ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Payment not found' 
+      });
+    }
+    
+    console.log('✅ Payment approved successfully');
+    
+    res.json({
+      success: true,
+      message: 'Payment approved successfully',
+      payment: result.rows[0]
+    });
+  } catch (error) {
+    console.error('❌ Error approving payment:', error);
     res.status(500).json({ 
       success: false,
       error: 'Internal server error',
