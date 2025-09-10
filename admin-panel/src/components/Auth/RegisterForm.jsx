@@ -67,16 +67,18 @@ const RegisterForm = ({ switchToLogin }) => {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your full name"
               required
             />
           </div>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email Address</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               required
             />
           </div>
@@ -87,6 +89,7 @@ const RegisterForm = ({ switchToLogin }) => {
               id="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              placeholder="Enter your phone number"
               required
             />
           </div>
@@ -97,6 +100,7 @@ const RegisterForm = ({ switchToLogin }) => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
               required
             />
           </div>
@@ -107,6 +111,7 @@ const RegisterForm = ({ switchToLogin }) => {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
               required
             />
           </div>
@@ -115,15 +120,15 @@ const RegisterForm = ({ switchToLogin }) => {
             type="submit" 
             className="auth-button"
           >
-            {loading ? 'Creating Account...' : 'Register'}
+            {loading ? 'Creating Account' : 'Create Account'}
           </button>
         </form>
-        <p className="auth-switch">
+        <div className="auth-switch">
           Already have an account?{' '}
           <span onClick={switchToLogin} className="auth-link">
-            Login here
+            Sign In
           </span>
-        </p>
+        </div>
       </div>
     </div>
   );

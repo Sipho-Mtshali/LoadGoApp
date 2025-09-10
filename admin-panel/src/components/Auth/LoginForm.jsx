@@ -30,12 +30,13 @@ const LoginForm = ({ switchToRegister }) => {
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email Address</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               required
             />
           </div>
@@ -46,6 +47,7 @@ const LoginForm = ({ switchToRegister }) => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
               required
             />
           </div>
@@ -54,15 +56,15 @@ const LoginForm = ({ switchToRegister }) => {
             type="submit" 
             className="auth-button"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Signing In' : 'Sign In'}
           </button>
         </form>
-        <p className="auth-switch">
+        <div className="auth-switch">
           Don't have an account?{' '}
           <span onClick={switchToRegister} className="auth-link">
-            Register here
+            Create Account
           </span>
-        </p>
+        </div>
       </div>
     </div>
   );
