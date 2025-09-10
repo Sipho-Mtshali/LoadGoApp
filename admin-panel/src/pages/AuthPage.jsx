@@ -11,7 +11,18 @@ const AuthPage = () => {
       <div className="auth-content">
         <div className="auth-info">
           <h1>LoadGo Admin Dashboard</h1>
-          <p>Manage your logistics operations efficiently with our comprehensive admin panel.</p>
+          <p>
+            Streamline your global logistics operations with our comprehensive 
+            administrative platform. Built for professionals who demand reliability, 
+            efficiency, and precision in supply chain management.
+          </p>
+          <div className="company-features">
+            <div className="feature-item">Real-time shipment tracking</div>
+            <div className="feature-item">Global fleet management</div>
+            <div className="feature-item">Advanced analytics & reporting</div>
+            <div className="feature-item">Multi-language support</div>
+            <div className="feature-item">24/7 enterprise support</div>
+          </div>
         </div>
         {isLogin ? (
           <LoginForm switchToRegister={() => setIsLogin(false)} />

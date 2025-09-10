@@ -3,47 +3,182 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .auth-content {
   display: flex;
-  max-width: 900px;
+  max-width: 1000px;
   width: 100%;
-  background: white;
-  border-radius: 10px;
+  background: #ffffff;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 20px 40px rgba(0, 0, 0, 0.08),
+    0 40px 80px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin: 20px;
 }
 
 .auth-info {
   flex: 1;
-  background: linear-gradient(135deg, #4a90e2 0%, #3a80d2 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   color: white;
-  padding: 3rem;
+  padding: 4rem 3rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.4;
 }
 
 .auth-info h1 {
   font-size: 2.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  position: relative;
+  z-index: 1;
 }
 
 .auth-info p {
-  font-size: 1.1rem;
-  line-height: 1.6;
+  font-size: 1.125rem;
+  line-height: 1.7;
+  opacity: 0.95;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-info .company-features {
+  margin-top: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-info .feature-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.auth-info .feature-item::before {
+  content: '✓';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Form container within auth-content */
+.auth-content .auth-container {
+  background: none;
+  padding: 0;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.auth-content .auth-form {
+  box-shadow: none;
+  border: none;
+  max-width: none;
+  width: 100%;
+  margin: 2rem;
 }
 
 @media (max-width: 768px) {
   .auth-content {
     flex-direction: column;
-    margin: 20px;
+    margin: 15px;
+    border-radius: 12px;
   }
   
   .auth-info {
-    padding: 2rem;
+    padding: 3rem 2rem;
     text-align: center;
+    order: 2;
+  }
+  
+  .auth-info h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .auth-info p {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .auth-info .company-features {
+    margin-top: 1.5rem;
+  }
+  
+  .auth-info .feature-item {
+    justify-content: center;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .auth-content .auth-form {
+    margin: 1.5rem;
+    order: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-content {
+    margin: 10px;
+  }
+  
+  .auth-info {
+    padding: 2rem 1.5rem;
+  }
+  
+  .auth-info h1 {
+    font-size: 1.75rem;
+  }
+  
+  .auth-content .auth-form {
+    margin: 1rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .auth-page {
+    background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+  }
+  
+  .auth-content {
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  
+  .auth-info {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   }
 }
